@@ -9,3 +9,6 @@ class Zhttp:
         pass
     def post_str(self, url=None, head=None, post_data=None):
         pass
+
+
+    
