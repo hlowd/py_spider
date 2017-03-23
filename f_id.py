@@ -1,5 +1,7 @@
 # coding:utf-8
 import sys
+import sqlite3
+import os
 
 
 class Info:
@@ -44,6 +46,63 @@ class Info:
     tp["d0cf11e0a1b11ae10000"] = "wps"    # WPS文字wps、表格et、演示dps都是一样的
     tp["6431303a637265617465"] = "torrent"
 
+def genFile(dir):
+    for i in os.listdir(dir):
+        p = os.path.join(dir, i)
+        if os.path.isfile(p):
+            yield p
+        elif os.path.isdir(p):
+            print('--------------')
+            genFile(p)
+        else:
+            continue
+
+
+
+
+def getFileData(fn):
+    r = str()
+    ext = getExtName(fn)
+    with open(fn, 'rb') as f:
+        t10 = f.read(10)
+        for i in range(10):
+            if 9 >= t10[i] >= 0:
+                r += '0'+ hex(t10[i])[2:4]
+            else:
+                r += hex(t10[i])[2:4]
+    ext =getExtName(fn)
+    return r,ext
+
+
+def getExtName(fn):
+    import os
+    if os.path.exists(fn) and os.path.isfile(fn):
+        (filepath, tempfilename) = os.path.split(fn)
+        (shotname, extension) = os.path.splitext(tempfilename)
+        return extension
+    else:
+        return None
+
+
+
+
+def buildDB(listdata=list()):
+    conn = sqlite3.connect("fileinfo.db")
+    s=conn.execute("""select count(*) from sqlite_master where type='table' and name='filevector'""")
+    if s.fetchone()[0] ==0:
+        conn.execute('''CREATE TABLE filevector
+               (vec varchar(20) PRIMARY KEY  NOT NULL,
+                extname   varchar(10)    NOT NULL,
+                desc      varchar(50));''')
+
+    sql = 'insert into vecinfo (vec,extname,des) values(?,?,?)'
+    try:
+        conn.executemany(sql,listdata)
+        conn.commit()
+    except Exception as e:
+        raise Exception("更新数据库出错")
+
+
 
 def handler(fn):
     r = str()
@@ -55,7 +114,6 @@ def handler(fn):
             else:
                 r += hex(t10[i])[2:4]
     print('-' * 40)
-    print(r)
     if r in Info.tp.keys():
         print('-'*40)
         print("{0}的文件类型是:{1}".format(fn, Info.tp[r]))
@@ -64,8 +122,8 @@ def handler(fn):
 
 
 def main(argv):
-    print(argv)
-    handler(argv[1])
+   for i in genFile("d:\\tool"):
+       print(i)
 
 if __name__ == '__main__':
     main(sys.argv)
