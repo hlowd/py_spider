@@ -6,9 +6,9 @@ import os
 
 class Info:
     tp = dict()
-    tp["ffd8ffe000104a464946"] = "jpg"     # JPEG [jpg)
-    tp["89504e470d0a1a0a0000"] = "png"     # PNG [png)
-    tp["47494638396126026f01"] = "gif"     # GIF [gif)
+    tp["jpg"] = "JPEG [jpg)"
+    tp["png"] = "PNG [png)"
+    tp["gif"] = "gif"
     tp["49492a00227105008037"] = "tif"     # TIFF [tif)
     tp["424d228c010000000000"] = "bmp"     # 16色位图[bmp)
     tp["424d8240090000000000"] = "bmp"     # 24位位图[bmp)
@@ -46,62 +46,84 @@ class Info:
     tp["d0cf11e0a1b11ae10000"] = "wps"    # WPS文字wps、表格et、演示dps都是一样的
     tp["6431303a637265617465"] = "torrent"
 
-def genFile(dir):
+
+def genFileList(dir,li):
     for i in os.listdir(dir):
         p = os.path.join(dir, i)
         if os.path.isfile(p):
-            yield p
+            li.append(p)
         elif os.path.isdir(p):
-            print('--------------')
-            genFile(p)
+            genFileList(p,li)
         else:
             continue
 
 
 
 
-def getFileData(fn):
+def getFileID(fn):
     r = str()
-    ext = getExtName(fn)
-    with open(fn, 'rb') as f:
-        t10 = f.read(10)
-        for i in range(10):
-            if 9 >= t10[i] >= 0:
-                r += '0'+ hex(t10[i])[2:4]
-            else:
-                r += hex(t10[i])[2:4]
-    ext =getExtName(fn)
-    return r,ext
+    size = os.path.getsize(fn)
+    try:
+        with open(fn, 'rb') as f:
+            t5 = f.read(4)
+            for i in range(4):
+                if 15 >= t5[i] >= 0:
+                    r += '0'+ hex(t5[i])[2:4]
+                else:
+                    r += hex(t5[i])[2:4]
+    except Exception:
+        return '00000000'
+    return r
 
 
-def getExtName(fn):
+def getFileExtName(fn):
     import os
     if os.path.exists(fn) and os.path.isfile(fn):
         (filepath, tempfilename) = os.path.split(fn)
         (shotname, extension) = os.path.splitext(tempfilename)
         return extension
     else:
-        return None
+        return 'None'
 
 
+def getFileData(fn):
+    return getFileID(fn),getFileExtName(fn)
 
-
-def buildDB(listdata=list()):
-    conn = sqlite3.connect("fileinfo.db")
-    s=conn.execute("""select count(*) from sqlite_master where type='table' and name='filevector'""")
-    if s.fetchone()[0] ==0:
-        conn.execute('''CREATE TABLE filevector
-               (vec varchar(20) PRIMARY KEY  NOT NULL,
-                extname   varchar(10)    NOT NULL,
-                desc      varchar(50));''')
-
-    sql = 'insert into vecinfo (vec,extname,des) values(?,?,?)'
+def insert(listdata=list(),tb=None):
+    if tb is None:raise Exception("tb 参数不能为空")
+    conn = getConn()
+    sql = 'insert into {0} (vec,extname) values(?,?)'.format(tb)
     try:
         conn.executemany(sql,listdata)
         conn.commit()
     except Exception as e:
-        raise Exception("更新数据库出错")
+        print(e)
+    finally:
+        conn.close()
 
+def getConn(tb1='FileTypeN',tb2='FileType'):
+    conn = sqlite3.connect("zf.db")
+    c1 = conn.execute("""select count(*) from sqlite_master where type='table' and name='{0}'""".format(tb1))
+    c2 = conn.execute("""select count(*) from sqlite_master where type='table' and name='{0}'""".format(tb2))
+    if c1.fetchone()[0] == 0:
+        conn.execute('''CREATE TABLE FileTypeN
+                       (vec varchar(5)  NOT NULL,
+                        extname   varchar(5)   NOT NULL);''')
+    if c2.fetchone()[0] == 0:
+        conn.execute('''CREATE TABLE FileType
+                       (vec varchar(5) PRIMARY KEY  NOT NULL,
+                        extname   varchar(5)   NOT NULL);''')
+    conn.commit()
+    c1.close()
+    c2.close()
+    return conn
+
+
+def washingDB(tb1='FileTypeN',tb2='FileType'):
+    conn = getConn()
+    c1 =conn.execute("select * from {}".format(tb1))
+    tmp =c1.fetchall()
+    print(tmp)
 
 
 def handler(fn):
@@ -120,10 +142,20 @@ def handler(fn):
         print('-'*40)
 
 
+def dup_remove(list):
+    """列表去重"""
+    return {}.fromkeys(list).keys()
+
 
 def main(argv):
-   for i in genFile("d:\\tool"):
-       print(i)
+    li = list()
+    r=[]
+    genFileList("d:\\tool",li)
+    for i in li:
+        r.append(getFileData(i))
+    print(r)
+    washingDB()
+
 
 if __name__ == '__main__':
     main(sys.argv)
