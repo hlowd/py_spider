@@ -47,115 +47,173 @@ class Info:
     tp["6431303a637265617465"] = "torrent"
 
 
-def genFileList(dir,li):
-    for i in os.listdir(dir):
-        p = os.path.join(dir, i)
-        if os.path.isfile(p):
-            li.append(p)
-        elif os.path.isdir(p):
-            genFileList(p,li)
-        else:
-            continue
+class FileType:
+    def __init__(self):
+        self.tb = 'FileType'
+        self.conn = self.get_conn()
 
-
-
-
-def getFileID(fn):
-    r = str()
-    size = os.path.getsize(fn)
-    try:
-        with open(fn, 'rb') as f:
-            t5 = f.read(4)
-            for i in range(4):
-                if 15 >= t5[i] >= 0:
-                    r += '0'+ hex(t5[i])[2:4]
-                else:
-                    r += hex(t5[i])[2:4]
-    except Exception:
-        return '00000000'
-    return r
-
-
-def getFileExtName(fn):
-    import os
-    if os.path.exists(fn) and os.path.isfile(fn):
-        (filepath, tempfilename) = os.path.split(fn)
-        (shotname, extension) = os.path.splitext(tempfilename)
-        return extension
-    else:
-        return 'None'
-
-
-def getFileData(fn):
-    return getFileID(fn),getFileExtName(fn)
-
-def insert(listdata=list(),tb=None):
-    if tb is None:raise Exception("tb 参数不能为空")
-    conn = getConn()
-    sql = 'insert into {0} (vec,extname) values(?,?)'.format(tb)
-    try:
-        conn.executemany(sql,listdata)
-        conn.commit()
-    except Exception as e:
-        print(e)
-    finally:
-        conn.close()
-
-def getConn(tb1='FileTypeN',tb2='FileType'):
-    conn = sqlite3.connect("zf.db")
-    c1 = conn.execute("""select count(*) from sqlite_master where type='table' and name='{0}'""".format(tb1))
-    c2 = conn.execute("""select count(*) from sqlite_master where type='table' and name='{0}'""".format(tb2))
-    if c1.fetchone()[0] == 0:
-        conn.execute('''CREATE TABLE FileTypeN
-                       (vec varchar(5)  NOT NULL,
-                        extname   varchar(5)   NOT NULL);''')
-    if c2.fetchone()[0] == 0:
-        conn.execute('''CREATE TABLE FileType
-                       (vec varchar(5) PRIMARY KEY  NOT NULL,
-                        extname   varchar(5)   NOT NULL);''')
-    conn.commit()
-    c1.close()
-    c2.close()
-    return conn
-
-
-def washingDB(tb1='FileTypeN',tb2='FileType'):
-    conn = getConn()
-    c1 =conn.execute("select * from {}".format(tb1))
-    tmp =c1.fetchall()
-    print(tmp)
-
-
-def handler(fn):
-    r = str()
-    with open(fn, 'rb') as f:
-        t10 = f.read(10)
-        for i in range(10):
-            if 9 >= t10[i] >= 0:
-                r += '0'+ hex(t10[i])[2:4]
+    @staticmethod
+    def get_dir_files(dir,li):
+        for i in os.listdir(dir):
+            p = os.path.join(dir, i)
+            if os.path.isfile(p):
+                li.append(p)
+            elif os.path.isdir(p):
+                FileType.get_dir_files(p, li)
             else:
-                r += hex(t10[i])[2:4]
-    print('-' * 40)
-    if r in Info.tp.keys():
-        print('-'*40)
-        print("{0}的文件类型是:{1}".format(fn, Info.tp[r]))
-        print('-'*40)
+                continue
+
+    @staticmethod
+    def get_file_id(fn):
+        r = str()
+        try:
+            with open(fn, 'rb') as f:
+                t5 = f.read(4)
+                for i in range(4):
+                    if 15 >= t5[i] >= 0:
+                        r += '0' + hex(t5[i])[2:4]
+                    else:
+                        r += hex(t5[i])[2:4]
+        except Exception:
+            return '00000000'
+        return r
+
+    @staticmethod
+    def get_file_ext(fn):
+        import os
+        if os.path.exists(fn) and os.path.isfile(fn):
+            (dirPath, fileName) = os.path.split(fn)
+            (basename, ext) = os.path.splitext(fileName.lower())
+            return ext
+        else:
+            return 'None'
+
+    @staticmethod
+    def get_file_data(fn):
+        return FileType.get_file_id(fn), FileType.get_file_ext(fn)
+
+    @staticmethod
+    def dup_remove(lst):
+        """列表去重"""
+        return {}.fromkeys(lst).keys()
+
+    @staticmethod
+    def wash_data(lst):
+        sIdList = list()
+        for i in lst:
+            sIdList.append(i[0])
+        didlist = FileType.dup_remove(sIdList)
+        # --------取出唯一的id ,并形成列表--------
+        cleanData =list()
+        for i in didlist:
+            ext = list()
+            for j in lst:
+                if j[0] == i:
+                    ext.append(j[1])
+            ext_dup_remove = FileType.dup_remove(ext)
+            ext_str = FileType.list_to_str(ext_dup_remove)
+            cleanData.append((i,ext_str))
+        # --------遍历文件指纹，并把指纹相同的扩展名进行合并，形成以指纹为id的唯一记录 --------
+        return cleanData
 
 
-def dup_remove(list):
-    """列表去重"""
-    return {}.fromkeys(list).keys()
+    @staticmethod
+    def list_to_str(list):
+        s= str()
+        for i in list:
+            s += str(i)
+        return s
+
+    def insert_list(self,list_data=list()):
+        sql = 'insert into {0} (id,ext) values(?,?)'.format(self.tb)
+        try:
+            self.conn.executemany(sql,list_data)
+            self.conn.commit()
+        except Exception as e:
+            print("批量插入数据失败，失败原因:{e}".format(e))
+
+    def insert_one(self,set_data=set()):
+        sql = 'insert into {0} (id,ext) values{1}'.format(self.tb,set_data)
+        try:
+            self.conn.execute(sql)
+            self.conn.commit()
+            print("{0}表中成功插入数据:{1}".format(self.tb,set_data))
+        except Exception:
+            print("{0}表中成功插入数据:{1}".format(self.tb,set_data))
+
+    def select_all(self):
+        sql = 'select * from {0}'.format(self.tb)
+        try:
+            cur=self.conn.execute(sql)
+            return cur.fetchall()
+        except Exception as e:
+            print("获取表中所有数据失败，失败原因:{0}".format(e))
+            return None
+
+    def delete_all_rows(self):
+        sql = "DELETE FROM {0}".format(self.tb)
+        try:
+            self.conn.execute(sql)
+            self.conn.commit()
+        except Exception as e:
+            print("清空表中所有数据失败，失败原因:{0}".format(e))
+
+    def get_conn(self):
+        conn = sqlite3.connect("zf.db")
+        c1 = conn.execute("""select count(*) from sqlite_master where type='table' and name='{0}'""".format(self.tb))
+        if c1.fetchone()[0] == 0:
+            conn.execute('''CREATE TABLE FileType
+                           (id varchar(10) primary key  NOT NULL,
+                            ext   varchar(500)   NOT NULL);''')
+        conn.commit()
+        return conn
+
+    def feed_db(self,dirName):
+        foods = list()
+        new_data = list()
+        FileType.get_dir_files(dirName, foods)
+        print("获取新增文件列表，共有新文件{0}个！".format(len(foods)))
+        print("开始获取文件特征！")
+        for i in foods:
+            new_data.append(FileType.get_file_data(i))
+        old_data = self.select_all()
+        if old_data is None:
+            while True:
+                tmp = input("旧数据为空，仅使用新数据?:(继续：y 退出 :n):")
+                if "n" == tmp:
+                    print("用户选择退出，请检查数据库状况!!!")
+                    sys.exit(1)
+                elif "y" == tmp:
+                    old_data = []
+                    break
+                else:
+                    continue
+        new_data += old_data
+        print("开始清洗数据，去重和合并新旧数据！")
+        clean_data = FileType.wash_data(new_data)
+        print("删除旧表所有数据！")
+        self.delete_all_rows()
+        print("删除旧表所有数据完毕！")
+        self.insert_list(list_data=clean_data)
+        print("插入生成的新数据！")
+        self.conn.close()
+        print("数据库数据更新完毕！")
+
+    def select_data(self,str_data):
+        sql = 'select * from {0} where id = {1}'.format(self.tb,str_data)
+        try:
+            cur = self.conn.execute(sql)
+            return cur.fetchall()
+        except Exception as e:
+            print("获取表中所有数据失败，失败原因:{0}".format(e))
+            return None
+
+
 
 
 def main(argv):
-    li = list()
-    r=[]
-    genFileList("d:\\tool",li)
-    for i in li:
-        r.append(getFileData(i))
-    print(r)
-    washingDB()
-
+    s = FileType()
+    s.feed_db("d:\\zf")
 
 if __name__ == '__main__':
     main(sys.argv)
