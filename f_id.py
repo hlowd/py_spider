@@ -6,9 +6,6 @@ import os
 
 class Info:
     tp = dict()
-    tp["jpg"] = "JPEG [jpg)"
-    tp["png"] = "PNG [png)"
-    tp["gif"] = "gif"
     tp["49492a00227105008037"] = "tif"     # TIFF [tif)
     tp["424d228c010000000000"] = "bmp"     # 16色位图[bmp)
     tp["424d8240090000000000"] = "bmp"     # 24位位图[bmp)
@@ -49,19 +46,23 @@ class Info:
 
 class FileType:
     def __init__(self):
+        self.db = 'zf.sqlite3'
         self.tb = 'FileType'
         self.conn = self.get_conn()
 
     @staticmethod
     def get_dir_files(dir,li):
-        for i in os.listdir(dir):
-            p = os.path.join(dir, i)
-            if os.path.isfile(p):
-                li.append(p)
-            elif os.path.isdir(p):
-                FileType.get_dir_files(p, li)
-            else:
-                continue
+        try:
+            for i in os.listdir(dir):
+                p = os.path.join(dir, i)
+                if os.path.isfile(p):
+                    li.append(p)
+                elif os.path.isdir(p):
+                    FileType.get_dir_files(p, li)
+                else:
+                    continue
+        except Exception as e:
+            print(e)
 
     @staticmethod
     def get_file_id(fn):
@@ -159,7 +160,7 @@ class FileType:
             print("清空表中所有数据失败，失败原因:{0}".format(e))
 
     def get_conn(self):
-        conn = sqlite3.connect("zf.db")
+        conn = sqlite3.connect(self.db)
         c1 = conn.execute("""select count(*) from sqlite_master where type='table' and name='{0}'""".format(self.tb))
         if c1.fetchone()[0] == 0:
             conn.execute('''CREATE TABLE FileType
@@ -209,11 +210,9 @@ class FileType:
             return None
 
 
-
-
 def main(argv):
     s = FileType()
-    s.feed_db("d:\\zf")
+    s.feed_db("f:")
 
 if __name__ == '__main__':
     main(sys.argv)
