@@ -15,9 +15,11 @@ class Win:
         self.root.title(title)
         self.root.geometry(str(self.__w)+"x"+str(self.__h)+"+"+str(self.__x)+"+"+str(self.__y))
         self.root.resizable(width=False, height=False)
+
         self.seeFileInit()
         self.spiderInit()
 
+        self.pool = multiprocessing.Pool(multiprocessing.cpu_count())
         #self.root.set
         self.root.mainloop()
 
@@ -47,10 +49,10 @@ class Win:
         self.lb_spider = Label(master=self.spider_frame, textvariable=self.lb_spider_txt)
         self.lb_sf.pack(side='left', padx=5, pady=5)
 
+
     def huabanCmd(self):
         self.btn_huaban.configure(state='disable')
         print(multiprocessing.cpu_count())
-        self.pool = multiprocessing.Pool(multiprocessing.cpu_count())
         self.pool.apply_async(func=self.test(),callback=self.f_call())
         self.pool.close()
         print("111111111111111")
@@ -58,10 +60,10 @@ class Win:
         print(self.lb_spider_txt.get())
 
 
-
     def spider_huaban(self,args="保险丝"):
         h = huaban.HuaBan(args)
         h.start()
+
 
     def test(self):
         for i in range(50):
