@@ -33,7 +33,6 @@ def fib_01(n):
         return fib_01(n-1)+fib_01(n-2)+fib_01(n-3)
 
 
-
 def fib_02(n):
     assert isinstance(n,int)
     a, b ,c= 1, 2, 4
@@ -48,12 +47,14 @@ def fib_02(n):
 
 这是一个没有个数的求和问题
 最大步数: 每次走一阶，那么步子数就是n
-最小步数:  n%3 ==0 时，步子数就是 n/3   n%3 !=0 步子数就是n//3+1
+最小步数:  n%3 ==0 时，步子数就是 n//3
+           n%3 !=0 步子数就是n//3+1
 
 x / y 	    除法运算,结果是浮点数
 x%y 	    求模运算
 x**y 	    x的y次方
-x // y 	    两数相除向下取整 (5//3)=1,(-5//3)=-2
+x // y 	    两数相除向下取整
+           (5//3)=1,(-5//3)=-2
 '''
 
 def big(n =1):
@@ -77,46 +78,65 @@ def sum_list(li):
         result += i
     return result
 
-def pp(n):
+def start_fib(n):
+    '''从最大值遍历到最小值来确定步数，
+    中间经过去除包含456789的数字，
+    去除0，去重复，并把最终结果为台阶
+    数目的数字 做为一个列表返回
+    '''
     b=big(n)
     l=little(n)
     result = dict()
     for i in range(int(l),int(b)+1):
         si=str(i)
         if not check_str(si):continue
-        if sum_list(fenci(si)) == n:
+        if sum_list(fen_str(si)) == n:
             print(i)
             result[si]=None
     print(sorted(result.keys()))
 
-def fenci(strn):
+
+def fen_str(strn):
+    """分词函数，将 数字字符串 分解成为一个个整数"""
     i = 0
     while i < len(strn):
         yield int(strn[i:i + 1])
         i+=1
 
-def fen_list(strn):
+def fen_list(li):
+    """将包含元组的列表，分解出一个个的元祖，并返回"""
     i = 0
-    while i < len(strn):
-        yield strn[i:i + 1]
+    while i < len(li):
+        yield li[i:i + 1]
         i+=1
 
 
 def check_str(strn):
+    """检查数字字符串是否是有 123这三个字符组成"""
     for i in strn:
         if i not in '123':
             return False
     return True
 """
-上面这个算法是遍历算法，从最小的可能数值一直到最大的数值，可是随着台阶数量级的增加，
-计算量也是每次增加一个数量级，所以这是最笨的方法"""
-#-----------------------------------------------------------------
+上面这个算法是遍历算法，从最小的可能数值一直到最大的数值，
+可是随着台阶数量级的增加，计算量也是每次增加一个数量级，
+所以这是最笨的方法
+"""
 
 
-"所以算法就是因式分解，从最大的3333333,分解每一个3，就能得到所要的步骤"
-"""因式分解是错误的，因为他固定了最后一位，或者其中的某一位，这打破了排列的根基"""
+"""
+-----------------
+所以算法就是因式分解，
+从最大的3333333,分解每一个3，
+就能得到所要的步骤
+-----------------
+"""
+
+"""因式分解是错误的，因为他固定了最后一位，或者其中的某一位"""
+
 
 def fenjie(strn):
+    """因式分解函数，将一个数字字符串分解成，一个包含元组的列表"""
     res=[]
     for i in fen_list(strn):
         if i == '3':res.append(('111','12','21','3'))
@@ -127,34 +147,49 @@ def fenjie(strn):
 
 
 def ivb(v1,v2):
+    """
+    今天才知道这玩意叫——笛卡尔积
+
+    笛卡尔乘积是指在数学中，两个集合X和Y的笛卡尓积（Cartesian product），又称直积，
+    表示为X × Y，第一个对象是X的成员而第二个对象是Y的所有可能有序对的其中一个成员。
+    假设集合A={a, b}，集合B={0, 1, 2}，
+    则两个集合的笛卡尔积为{(a, 0), (a, 1), (a, 2), (b, 0), (b, 1), (b, 2)}。
+
+    :param v1: 第一个列表
+    :param v2: 第二个列表
+    :return: 连个列表的的笛卡尔积存入第一个，然后返回
+    """
     result=[]
     for i in v1:
         for j in v2:
             result.append(i+j)
     return result
 
-def pailie_list(ee):
-    v1 = ee.pop()
+def pailie_list(li):
+    """
+    迭代调用一个 包含多个元组的列表 的笛卡尔积
+    """
+    v1 = li.pop()
     try:
-        v2 = ee.pop()
+        v2 = li.pop()
     except IndexError:
         v2 = None
     while v2 != None:
         v1 = ivb(v1, v2)
         try:
-            v2 = ee.pop()
+            v2 = li.pop()
         except IndexError:
             v2 = None
     return v1
 
 
-
-
-
-
-
-
 def tkmess(n):
+    """此函数是 因式分解 算法的思路整理
+    目的是从台阶数目得到一个可以分解的
+    数字字符串 然后通过对这个字符串进行
+    因式分解，通过求笛卡尔积来确定方法
+    此方法还不成熟，还在思考中。。。
+    """
     if n ==1:return '1'
     if n == 2: return '2'
     if n == 3: return '3'
@@ -177,7 +212,7 @@ def tkmess(n):
 
 if __name__ == "__main__":
     print(len(pailie_list(fenjie('313'))))
-    pp(7)
+    start_fib(7)
 
 
 
