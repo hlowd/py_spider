@@ -1,23 +1,35 @@
 #coding:utf-8
 
-import re
-import urllib.request
-import os.path
-
-def getHtml(url):
-    page = urllib.request.urlopen(str(url))
-    htm = page.read().decode('utf-8')
-    return htm
+import hashlib
 
 
-def getImg(html):
-    reg = r'src="(http.*?\.jpg)" size='
-    imgre=re.compile(reg)
-    imglist=imgre.findall(html)
-    os.mkdir("c:\\123")
-    for imgurl in imglist:
-        print("正在下载{0}".format(imgurl))
-        urllib.request.urlretrieve(imgurl,"c:\\123\\{0}.jpg".format(os.path.basename(imgurl)))
+def md5_16(s='cuijunling'):
+    m=hashlib.md5()
+    m.update(s.encode("utf-8"))
+    return m.hexdigest()[8:-8]
+import asyncio
 
-html=getHtml("https://tieba.baidu.com/p/5048432758")
-getImg(html)
+
+async def hello():
+    print("hello the world")
+    r = await asyncio.sleep(1)
+    print("hello again")
+
+def main():
+    loop = asyncio.get_event_loop()
+    """
+    tasks = [
+        asyncio.ensure_future(hello()),
+    ]
+    loop.run_until_complete(asyncio.wait(tasks))
+    """
+    print("begin")
+    loop.run_until_complete(hello())
+    print("end")
+    loop.close()
+
+    print("program is finished.")
+
+
+if __name__ == "__main__":
+    print(md5_16())
