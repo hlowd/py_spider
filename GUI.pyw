@@ -6,8 +6,22 @@ from tkinter import filedialog
 import sqlite3
 import multiprocessing.process
 import f_id
-import huaban_search as huaban
+import py_spider.huaban_search as huaban
 import time
+import threading
+
+
+class Spi_HuaBan:
+    def __init__(self):
+        self.evt = threading.Event()
+        # 定义一个信号量，用于标识工作线程是否正常启动
+    def do_work(self):
+        """线程工作函数"""
+        self.evt.set()
+        h=huaban.HuaBan("椅子")
+        h.start()
+        self.evt.clear()
+
 class Win:
     def __init__(self,title="zf's Win"):
         self.root = Tk()
@@ -19,8 +33,7 @@ class Win:
         self.seeFileInit()
         self.spiderInit()
 
-        self.pool = multiprocessing.Pool(multiprocessing.cpu_count())
-        #self.root.set
+
         self.root.mainloop()
 
     def seeFileInit(self):
@@ -47,17 +60,33 @@ class Win:
         self.btn_huaban.pack(side='left', padx=5, pady=5)
         self.lb_spider_txt = StringVar()
         self.lb_spider = Label(master=self.spider_frame, textvariable=self.lb_spider_txt)
-        self.lb_sf.pack(side='left', padx=5, pady=5)
+        self.lb_spider.pack(side='left', padx=5, pady=5)
+        self.huaban = Spi_HuaBan()
+
+
 
 
     def huabanCmd(self):
-        self.btn_huaban.configure(state='disable')
-        print(multiprocessing.cpu_count())
-        self.pool.apply_async(func=self.test(),callback=self.f_call())
-        self.pool.close()
-        print("111111111111111")
-        self.lb_spider_txt.set("正在处理")
-        print(self.lb_spider_txt.get())
+        if self.huaban.evt.isSet():
+            return
+        else:
+            self.lb_spider_txt.set("开启！")
+            t_do = threading.Thread(target =self.huaban.do_work)
+            t_monitor = threading.Thread(target =self.huaban_monitor)
+            t_do.daemon = True
+            t_monitor.daemon=True
+            t_do.start()
+            t_monitor.start()
+
+    def huaban_monitor(self):
+        while True:
+            if self.huaban.evt.isSet():
+                self.lb_spider_txt.set("程序正在运行中...")
+                time.sleep(0.5)
+            else:
+                self.lb_spider_txt.set("运行完毕")
+                break
+
 
 
     def spider_huaban(self,args="保险丝"):
@@ -66,15 +95,10 @@ class Win:
 
 
     def test(self):
-        for i in range(50):
-            time.sleep(0.5)
-            print(i)
+        for i in range(10):
+            time.sleep(0.05)
+            self.lb_spider_txt.set((i))
             # self.lb_spider_txt.set(str(i))
-
-    def f_call(self):
-        print("jieshu")
-        self.btn_huaban.configure(state='normal')
-
 
     def getScreenSize(self):
         scn_w = self.root.winfo_screenwidth()
