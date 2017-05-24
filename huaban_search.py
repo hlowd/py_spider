@@ -11,18 +11,18 @@ import time
 
 class JsonHeader:
     def __init__(self, url):
-        self.json_header = ['Host: huaban.com',
-                            'Connection: keep-alive',
-                            'Accept: application/json',
-                            'X-Requested-With: XMLHttpRequest',
-                            'X-Request: JSON',
-                            'User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 \
-                            (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36',
-                            'Referer: ' + url,
-                            'Accept-Encoding:deflate, sdch',
-                            # 这里要去掉zip
-                            'Accept-Language: zh-CN,zh;q=0.8]']
-
+        self.json_header = [
+            'Host: huaban.com',
+            'Connection: keep-alive',
+            'Accept: application/json',
+            'X-Requested-With: XMLHttpRequest',
+            'X-Request: JSON',
+            'User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 '
+                          '(KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36',
+            'Referer: '+url,
+            'Accept-Encoding:deflate, sdch',
+             # 这里要去掉zip
+            'Accept-Language: zh-CN,zh;q=0.8']
 
 class HuaBan:
     def __init__(self, kword):
@@ -42,9 +42,9 @@ class HuaBan:
         url = 'http://huaban.com/search/?q=' + urllib.parse.quote(kword)
         html = self.oHttp.get(url)
         h = JsonHeader(url).json_header
-        s1 = re.findall(r'app.page\[\"pins\"\] = (.*)}}];', html.decode('utf-8'))
+        s1 = re.findall(r'app.page\[\"pins\"\] = (.*?)}];', html.decode('utf-8'))
         print(s1)
-        s = s1[0] + '}}]'
+        s = s1[0] + '}]'
         dic = json.loads(s)
         print(dic[0]['pin_id'])
         add = set()

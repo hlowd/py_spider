@@ -6,7 +6,7 @@ from tkinter import filedialog
 import sqlite3
 import multiprocessing.process
 import f_id
-import py_spider.huaban_search as huaban
+import huaban_search as huaban
 import time
 import threading
 

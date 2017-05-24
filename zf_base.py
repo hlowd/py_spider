@@ -3,10 +3,13 @@ class Zhttp:
             'Accept:text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',\
              'Accept-Language:en-US,en;q=0.5',\
              'Connection:keep-alive']
+
     def get(self,url=None, head=None):
         pass
+
     def post_dict(self, url=None, head=None, post_data=None):
         pass
+
     def post_str(self, url=None, head=None, post_data=None):
         pass
 
